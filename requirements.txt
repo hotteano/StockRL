@@ -1,0 +1,25 @@
+# Equity-MARL: A Financial Dynamics Framework for Multi-Agent Reinforcement Learning
+# Core Dependencies
+
+# Deep Learning
+torch>=2.0.0
+numpy>=1.24.0
+
+# Scientific Computing
+scipy>=1.10.0
+scikit-learn>=1.2.0
+
+# Reinforcement Learning
+gymnasium>=0.29.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utilities
+tqdm>=4.65.0
+tensorboard>=2.13.0
+
+# Optional: MARL Environments
+# pettingzoo>=1.24.0
+# smac @ git+https://github.com/oxwhirl/smac.git
