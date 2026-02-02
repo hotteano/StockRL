@@ -21,16 +21,31 @@ from .valuation import ValuationEngine, StockPriceTracker
 from .meta_investor import MetaInvestor, MarkowitzOptimizer
 from .bubble_detector import BubbleDetector, ParameterRestructurer
 from .emarl_framework import EquityMARL, EasyEquityMARL
+from .advanced_pricing import (
+    TimeVaryingVolatility,
+    GARCHVolatility,
+    MertonJumpDiffusion,
+    TimeVaryingJumpDiffusion,
+    RegimeSwitchingVolatility,
+    AdvancedValuationEngine,
+)
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __all__ = [
     # Main Framework
     "EquityMARL",
     "EasyEquityMARL",
-    # Option Pricing
+    # Option Pricing (Basic)
     "BlackScholesLayer",
     "BinomialTreePricer", 
     "AsianOptionPricer",
+    # Option Pricing (Advanced)
+    "TimeVaryingVolatility",
+    "GARCHVolatility",
+    "MertonJumpDiffusion",
+    "TimeVaryingJumpDiffusion",
+    "RegimeSwitchingVolatility",
+    "AdvancedValuationEngine",
     # Shapley Value
     "ShapleyCalculator",
     "MonteCarloShapley",
