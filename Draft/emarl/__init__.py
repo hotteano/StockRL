@@ -29,6 +29,12 @@ from .advanced_pricing import (
     RegimeSwitchingVolatility,
     AdvancedValuationEngine,
 )
+from .poisson_pricing import (
+    GeometricPoissonPricer,
+    TimeVaryingPoissonPricer,
+    PoissonValuationEngine,
+    poisson_ccdf,
+)
 
 __version__ = "2.1.0"
 __all__ = [
@@ -39,13 +45,18 @@ __all__ = [
     "BlackScholesLayer",
     "BinomialTreePricer", 
     "AsianOptionPricer",
-    # Option Pricing (Advanced)
+    # Option Pricing (Advanced - Continuous)
     "TimeVaryingVolatility",
     "GARCHVolatility",
     "MertonJumpDiffusion",
     "TimeVaryingJumpDiffusion",
     "RegimeSwitchingVolatility",
     "AdvancedValuationEngine",
+    # Option Pricing (Poisson - Discrete Jumps)
+    "GeometricPoissonPricer",
+    "TimeVaryingPoissonPricer",
+    "PoissonValuationEngine",
+    "poisson_ccdf",
     # Shapley Value
     "ShapleyCalculator",
     "MonteCarloShapley",
