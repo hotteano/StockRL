@@ -240,6 +240,50 @@ This confirms that the current option price is the risk-neutral expected present
 
 \section{Experiment Details}
 
+\subsection{Practical Implementation Algorithm}
 
+While the theoretical derivation involves solving complex Partial Integro-Differential Equations (PIDE) as shown in Theorem 3.2, solving these equations numerically at each time step during training is computationally prohibitive.
+
+To bridge the gap between theory and practice, we implement OptionRL using \textbf{Potential-Based Reward Shaping (PBRS)}. Instead of solving the PIDE directly, we utilize the analytical solution (or a robust approximation) of the Merton Jump Diffusion model as a potential function $\Phi(s)$. This potential function captures the "theoretical value" of a state under risk-neutral measure, which is then used to reshape the sparse reward signal, accelerating the convergence of the model-free Q-learning agent.
+
+The implementation details are described in Algorithm \ref{alg:optionrl_merton}.
+
+\begin{algorithm}
+\caption{OptionRL via Merton Potential Shaping}
+\label{alg:optionrl_merton}
+\begin{algorithmic}[1]
+\Require State space $\mathcal{S}$, Action space $\mathcal{A}$, Goal Threshold $K$
+\Require Hyperparameters: Volatility $\sigma$, Jump Intensity $\lambda$, Risk-free rate $r$
+\Ensure Optimal Policy $\pi^*$
+\State Initialize $Q(s,a)$ arbitrarily for all $s \in \mathcal{S}, a \in \mathcal{A}$
+\State Initialize Potential $\Phi(s) = 0$
+
+\Function{GetMertonPotential}{$s$}
+    \State Map state $s$ to proxy asset price $S_t$ (e.g., semantic proximity)
+    \State Map state $s$ to time-to-go $T$
+    \State $d_1 \gets \frac{\ln(S_t/K) + (r + \frac{1}{2}\sigma^2)T}{\sigma\sqrt{T}}$
+    \State $P_{BS} \gets S_t \Phi_{norm}(d_1) - K e^{-rT} \Phi_{norm}(d_1 - \sigma\sqrt{T})$ \Comment{Vanilla Black-Scholes}
+    \State $P_{Merton} \gets P_{BS} \cdot (1 + \lambda T)$ \Comment{Approx. Jump Premium}
+    \State \Return $P_{Merton}$
+\EndFunction
+
+\For{each episode $1 \dots M$}
+    \State Initialize state $s$
+    \Repeat
+        \State Choose action $a$ from $s$ using $\epsilon$-greedy policy derived from $Q$
+        \State Take action $a$, observe reward $r_{env}$ and next state $s'$
+        
+        \State $\Phi_t \gets \textsc{GetMertonPotential}(s)$
+        \State $\Phi_{t+1} \gets \textsc{GetMertonPotential}(s')$
+        
+        \State $F_t \gets \gamma \Phi_{t+1} - \Phi_t$ \Comment{Calculate Shaping Reward}
+        \State $r_{total} \gets r_{env} + F_t$
+        
+        \State $Q(s,a) \gets Q(s,a) + \alpha [r_{total} + \gamma \max_{a'} Q(s',a') - Q(s,a)]$
+        \State $s \gets s'$
+    \Until{$s$ is terminal}
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
 \end{document}
