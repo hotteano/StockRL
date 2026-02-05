@@ -139,7 +139,27 @@ jumps, leading to fat-tailed reward distributions.
 To better capture these dynamics, we propose using the Merton Jump-Diffusion Model for reward shaping in Reinforcement Learning.
 By incorporating jump processes, the Merton model provides a more accurate representation of environments with abrupt changes.
 
-\subsection{Algorithm Framework}
+\subsection{Adapted Decaying for Poisson Jump Intensity}
+
+We have assume that the jump intensity $\lambda$ is constant in the Merton model. However, 
+such assumption may lead to the overestimation of jump effects, resulting in not convergent 
+value estimates.
+To address this, we introduce an adapted decaying mechanism for the jump intensity $\lambda$.
+
+We use the random counting process $N(t)$ to model the number of jumps occurring up to time $t$.
+When a significant jump is detected in the reward signal, we increase the jump intensity $\lambda$ to reflect the higher likelihood of future jumps.
+As the $N(t) \sim P(\lambda)$, then $t\sim \Gamma(n, \lambda)$, where $n$ is the number of the 
+observed jumps. After time $T$, where the option is bound to expire, we may count there 
+are how many jumps with intensity $\lambda$. If there are too less jumps, then it means 
+that the jump intensity is overestimated, thus we decay the $\lambda$ accordingly.
+Specifically, we update $\lambda$ as follows:
+\begin{equation} 
+\lambda \leftarrow \lambda \cdot \exp(-\beta \cdot (N(T) - \lambda T))
+\end{equation}
+And we sample the observed time period $T$ from $\Gamma(1, \lambda)$.
+
+
+\section{Algorithm Framework}
 
 The overall algorithm framework for BSMRL using Merton Potential Shaping is outlined in Algorithm~\ref{alg:bsmrl_merton}.
 We introduce a method from \cite{NSPM2020}, whic allows us to decompose the reward into a predictable 
