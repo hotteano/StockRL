@@ -20,7 +20,7 @@
 
 \begin{document}
 
-\title{OptionRL: Estimating with Differential Equations (Draft ver.)}
+\title{BSMRL: Estimating with Differential Equations (Draft ver.)}
 
 \author{Dongsheng Hou* \\
   Department of Computer Science and Engineering\\
@@ -47,11 +47,11 @@
 \section{Related Works}
 
 
-\section{OptionRL}
+\section{BSMRL}
 
 \subsection{Black-Scholes-Merton Model}
 
-In the field of financial mathematics, the Black-Scholes-Merton (BSM) model is a foundational framework for (European) option pricing. 
+In the field of financial mathematics, the Black-Scholes-Merton (BSM) model\cite{BS1973, Merton1974} is a foundational framework for (European) option pricing. 
 It assumes that the price of the underlying asset follows a geometric Brownian motion with constant volatility and drift. The BSM model 
 provides a closed-form solution for European-style options.
 
@@ -137,47 +137,73 @@ While the Black-Scholes model assumes continuous price movements, real-world env
 jumps, leading to fat-tailed reward distributions.
 
 To better capture these dynamics, we propose using the Merton Jump-Diffusion Model for reward shaping in Reinforcement Learning.
-By incorporating jump processes, the Merton model provides a more accurate representation of environments with abrupt changes
+By incorporating jump processes, the Merton model provides a more accurate representation of environments with abrupt changes.
 
 \subsection{Algorithm Framework}
 
-The overall algorithm framework for OptionRL using Merton Potential Shaping is outlined in Algorithm~\ref{alg:optionrl_merton}.
+The overall algorithm framework for BSMRL using Merton Potential Shaping is outlined in Algorithm~\ref{alg:bsmrl_merton}.
+We introduce a method from \cite{NSPM2020}, whic allows us to decompose the reward into a predictable 
+component and a chaotic component, thus estimate the volatility rate of the chaotic component, which will be 
+used to compute the Merton potential shaping reward.
 
-\begin{algorithm}
-\caption{OptionRL via Merton Potential Shaping}
-\label{alg:optionrl_merton}
+\begin{algorithm}[H]
+\caption{BSMRL}
+\label{alg:bsmrl_merton}
 \begin{algorithmic}[1]
-\Require State space $\mathcal{S}$, Action space $\mathcal{A}$, Goal Threshold $K$
-\Require Hyperparameters: Volatility $\sigma$, Jump Intensity $\lambda$, Risk-free rate $r$
-\Ensure Optimal Policy $\pi^*$
-\State Initialize $Q(s,a)$ arbitrarily for all $s \in \mathcal{S}, a \in \mathcal{A}$
-\State Initialize Potential $\Phi(s) = 0$
+\State \textbf{Hyperparameters:} Learning rate $\alpha$, Discount factor $\gamma$, Moving average rate $\eta$ (for statistics), Maturity $T$, Risk-free rate $r$, Jump mean $\mu_J$, Jump std $\delta_J$, Expansion terms $K$.
+\State \textbf{Initialize:} 
+\State $Q(s, a)$ arbitrarily.
+\State $\bar{R}(s, a) \leftarrow 0$ \Comment{Predictable Reward Component }
+\State $\Sigma^2_{chaos}(s, a) \leftarrow 0$ \Comment{Chaotic Variance (Doob Volatility) [cite: 139]}
+\State $\lambda_{jump}(s, a) \leftarrow \lambda_{init}$ \Comment{Estimated Jump Intensity for Levy Process}
+\State \textbf{Function} \textsc{BlackScholes}($S, K_{strike}, T, r, \sigma$):
+    \State $d_1 \leftarrow \frac{\ln(S/K_{strike}) + (r + 0.5\sigma^2)T}{\sigma\sqrt{T}}$
+    \State $d_2 \leftarrow d_1 - \sigma\sqrt{T}$
+    \State \textbf{return} $S \cdot \Phi(d_1) - K_{strike} e^{-rT} \cdot \Phi(d_2)$
+\State \textbf{End Function}
 
-\Function{GetMertonPotential}{$s$}
-    \State Map state $s$ to proxy asset price $S_t$ (e.g., semantic proximity)
-    \State Map state $s$ to time-to-go $T$
-    \State $d_1 \gets \frac{\ln(S_t/K) + (r + \frac{1}{2}\sigma^2)T}{\sigma\sqrt{T}}$
-    \State $P_{BS} \gets S_t \Phi_{norm}(d_1) - K e^{-rT} \Phi_{norm}(d_1 - \sigma\sqrt{T})$ \Comment{Vanilla Black-Scholes}
-    \State $P_{Merton} \gets P_{BS} \cdot (1 + \lambda T)$ \Comment{Approx. Jump Premium}
-    \State \Return $P_{Merton}$
-\EndFunction
-
-\For{each episode $1 \dots M$}
+\State \textbf{Function} \textsc{MertonPrice}($S_0, T, r, \sigma_{chaos}, \lambda, \mu_J, \delta_J$):
+    \State $Price \leftarrow 0$
+    \State $k \leftarrow e^{\mu_J + 0.5\delta_J^2} - 1$ \Comment{Expected jump size}
+    \State $\lambda' \leftarrow \lambda(1+k)$
+    \For{$n = 0$ to $K$}
+        \State $w_n \leftarrow \frac{e^{-\lambda' T} (\lambda' T)^n}{n!}$ \Comment{Poisson weight for n jumps}
+        \State $\sigma_n \leftarrow \sqrt{\sigma_{chaos}^2 + \frac{n \delta_J^2}{T}}$ \Comment{Effective volatility blending Doob noise \& Jumps}
+        \State $r_n \leftarrow r - \lambda k + \frac{n \ln(1+k)}{T}$
+        \State $Val_n \leftarrow \textsc{BlackScholes}(S_0, S_0, T, r_n, \sigma_n)$ \Comment{ATM Call Option as Enhanced Value}
+        \State $Price \leftarrow Price + w_n \cdot Val_n$
+    \EndFor
+    \State \textbf{return} $Price$
+\State \textbf{End Function}
+\Loop
     \State Initialize state $s$
-    \Repeat
-        \State Choose action $a$ from $s$ using $\epsilon$-greedy policy derived from $Q$
-        \State Take action $a$, observe reward $r_{env}$ and next state $s'$
+    \While{$s$ is not terminal}
+        \State Choose action $a$ (e.g., $\epsilon$-greedy based on $Q$)
+        \State Take action $a$, observe reward $R_{obs}$ and next state $s'$
         
-        \State $\Phi_t \gets \textsc{GetMertonPotential}(s)$
-        \State $\Phi_{t+1} \gets \textsc{GetMertonPotential}(s')$
+        \State $\delta_{pred} \leftarrow R_{obs} - \bar{R}(s, a)$ \Comment{Chaotic innovation [cite: 121]}
+        \State $\bar{R}(s, a) \leftarrow \bar{R}(s, a) + \eta \cdot \delta_{pred}$ \Comment{Update Predictable Component [cite: 170]}
+        \State $\Sigma^2_{chaos}(s, a) \leftarrow (1-\eta)\Sigma^2_{chaos}(s, a) + \eta \cdot (\delta_{pred})^2$ \Comment{Update Chaotic Variance }
         
-        \State $F_t \gets \gamma \Phi_{t+1} - \Phi_t$ \Comment{Calculate Shaping Reward}
-        \State $r_{total} \gets r_{env} + F_t$
+        \If{$(\delta_{pred})^2 > 3 \cdot \Sigma^2_{chaos}(s, a)$}
+            \State $\lambda_{jump}(s, a) \leftarrow (1-\eta)\lambda_{jump}(s, a) + \eta \cdot 1$ \Comment{Detect sparse jump}
+        \Else
+            \State $\lambda_{jump}(s, a) \leftarrow (1-\eta)\lambda_{jump}(s, a)$
+        \EndIf
+
+        \State $a'_{best} \leftarrow \arg\max_{a'} Q(s', a')$
+        \State $S_{underlying} \leftarrow Q(s', a'_{best})$ \Comment{Underlying asset is the naive value}
+        \State $\sigma_{input} \leftarrow \sqrt{\Sigma^2_{chaos}(s', a'_{best})}$ \Comment{Use Doob Volatility as input}
+        \State $V_{enhanced}(s') \leftarrow \textsc{MertonPrice}(S_{underlying}, T, r, \sigma_{input}, \lambda_{jump}(s'), \mu_J, \delta_J)$
         
-        \State $Q(s,a) \gets Q(s,a) + \alpha [r_{total} + \gamma \max_{a'} Q(s',a') - Q(s,a)]$
-        \State $s \gets s'$
-    \Until{$s$ is terminal}
-\EndFor
+        \State $Y_{target} \leftarrow R_{obs} + \gamma \cdot V_{enhanced}(s')$ \Comment{Maximize Option-Adjusted Return}
+        
+        \State \Comment{\textbf{Q-Update}}
+        \State $Q(s, a) \leftarrow Q(s, a) + \alpha \left( Y_{target} - Q(s, a) \right)$
+        
+        \State $s \leftarrow s'$
+    \EndWhile
+\EndLoop
 \end{algorithmic}
 \end{algorithm}
 
@@ -192,7 +218,17 @@ The overall algorithm framework for OptionRL using Merton Potential Shaping is o
 
 \subsection{Variance Analysis}
 
+\section{Discussion and Future Work} 
 
+\section{Conclusion}
+
+\begin{thebibliography}{99}
+
+
+\bibitem{BS1973} The Pricing of Options and Corporate Liabilities, Black and Scholes, 1973
+\bibitem{Merton1974} On the Pricing of Corporate Debt: The Risk Structure of Interest Rates, Merton, 1974
+\bibitem{NSPM2020} Risk-Sensitive Reinforcement Learning: a Martingale Approach to Reward Uncertainty
+\end{thebibliography}
 
 
 \appendix 

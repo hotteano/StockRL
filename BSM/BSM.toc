@@ -1,6 +1,6 @@
 \contentsline {section}{\numberline {1}Introduction}{2}{}%
 \contentsline {section}{\numberline {2}Related Works}{2}{}%
-\contentsline {section}{\numberline {3}OptionRL}{2}{}%
+\contentsline {section}{\numberline {3}BSMRL}{2}{}%
 \contentsline {subsection}{\numberline {3.1}Black-Scholes-Merton Model}{2}{}%
 \contentsline {paragraph}{Rationale}{2}{}%
 \contentsline {subsection}{\numberline {3.2}Merton Jump Model}{3}{}%
@@ -10,5 +10,7 @@
 \contentsline {subsection}{\numberline {4.1}MDP Formulation for OptionRL}{6}{}%
 \contentsline {subsection}{\numberline {4.2}Convergence Analysis}{6}{}%
 \contentsline {subsection}{\numberline {4.3}Variance Analysis}{6}{}%
+\contentsline {section}{\numberline {5}Discussion and Future Work}{6}{}%
+\contentsline {section}{\numberline {6}Conclusion}{6}{}%
 \contentsline {section}{\numberline {A}Proofs}{6}{}%
 \contentsline {section}{\numberline {B}Experiment Details}{6}{}%
