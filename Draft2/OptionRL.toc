@@ -1,0 +1,16 @@
+\contentsline {section}{\numberline {1}Introduction}{2}{}%
+\contentsline {section}{\numberline {2}Related Works}{2}{}%
+\contentsline {section}{\numberline {3}OptionRL}{2}{}%
+\contentsline {subsection}{\numberline {3.1}Levy Pricing}{2}{}%
+\contentsline {subsection}{\numberline {3.2}OptionRL Framework}{3}{}%
+\contentsline {section}{\numberline {4}Theoretical Analysis}{5}{}%
+\contentsline {subsection}{\numberline {4.1}MDP Formulation for OptionRL}{5}{}%
+\contentsline {subsection}{\numberline {4.2}Convergence Analysis}{5}{}%
+\contentsline {subsection}{\numberline {4.3}Variance Analysis}{5}{}%
+\contentsline {section}{\numberline {A}Proofs}{5}{}%
+\contentsline {subsection}{\numberline {A.1}Derivation of Levy Option Pricing Equation (Theorem 3.2)}{5}{}%
+\contentsline {paragraph}{Step 1: Dynamics of the Asset Price}{5}{}%
+\contentsline {paragraph}{Step 2: Ito's Lemma for Jump-Diffusion}{5}{}%
+\contentsline {subsection}{\numberline {A.2}Proof for theorem 3.4}{6}{}%
+\contentsline {section}{\numberline {B}Experiment Details}{7}{}%
+\contentsline {subsection}{\numberline {B.1}Practical Implementation Algorithm}{7}{}%

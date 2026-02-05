@@ -1,0 +1,260 @@
+\documentclass[a4paper， UTF-8]{article}
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\theoremstyle{plain}
+\newtheorem{theorem}{\indent Theorem}[section]
+\newtheorem{lemma}[theorem]{\indent Lemma}
+\newtheorem{assumption}[theorem]{\indent Assumption}
+\newtheorem{note}[theorem]{\indent Notation}
+\newtheorem{proposition}[theorem]{\indent Proposition}
+\newtheorem{corollary}[theorem]{\indent Corollary}
+\newtheorem{definition}{\indent Definition}[section]
+\newtheorem{example}{\indent Example}[section]
+\newtheorem{remark}{\indent Remark}[section]
+\newenvironment{solution}{\begin{proof}[\indent\bf Solution]}{\end{proof}}
+\renewcommand{\proofname}{\indent\bf Proof}
+
+\begin{document}
+
+\title{BSMRL: Estimating with Differential Equations (Draft ver.)}
+
+\author{Dongsheng Hou* \\
+  Department of Computer Science and Engineering\\
+  Southern University of Science and Technology\\
+  \texttt{12410421@mail.sustech.edu.cn}
+  \and  
+  Yanqiao Chen*\\ 
+  Department of Computer Science and Engineering\\
+  Southern University of Science and Technology\\
+  \texttt{12412115@mail.sustech.edu.cn}
+  }
+
+  
+
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+\section{Related Works}
+
+
+\section{BSMRL}
+
+\subsection{Black-Scholes-Merton Model}
+
+In the field of financial mathematics, the Black-Scholes-Merton (BSM) model\cite{BS1973, Merton1974} is a foundational framework for (European) option pricing. 
+It assumes that the price of the underlying asset follows a geometric Brownian motion with constant volatility and drift. The BSM model 
+provides a closed-form solution for European-style options.
+
+They derived a partial differential equation (PDE) that the option price must satisfy, known as the Black-Scholes equation.
+\begin{theorem}[Black-Scholes Equation]
+The price of a European call option $C(S, t)$ on a non-dividend-paying stock satisfies the following PDE:
+\begin{equation}
+\frac{\partial C}{\partial t} + \frac{1}{2}\sigma^2 S^2 \frac{\partial^2 C}{\partial S^2} + r S \frac{\partial C}{\partial S} - r C = 0
+\end{equation}
+where $C(S, t)$ is the price of the option at time $t$ when the underlying asset price is $S$, $\sigma$ is the volatility of the underlying asset, and $r$ is the risk-free interest rate.
+\end{theorem}
+
+By applying Ito's Lemma and constructing a riskless portfolio, they eliminated the stochastic component and derived the pricing formula for European call options.
+
+\begin{theorem}[Black-Scholes-Merton Formula]
+The price of a European call option $C(S_t, t)$ on a non-dividend-paying stock is given by:
+\begin{equation}
+C(S_t, t) = S_t \Phi(d_1) - K e^{-r(T-t)} \Phi(d_2)
+\end{equation}
+where:
+\begin{equation}
+d_1 = \frac{\ln(S_t/K) + (r + \frac{1}{2}\sigma^2)(T-t)}{\sigma\sqrt{T-t}}, \quad d_2 = d_1 - \sigma\sqrt{T-t}
+\end{equation}
+Here, $C(S_t, t)$ is the price of a European call option at time $t$, $S_t$ is the current price of the underlying asset, $K$ is the strike price,
+$r$ is the risk-free interest rate, $\sigma$ is the volatility of the underlying asset, $T$ is the time to maturity, and $\Phi(\cdot)$ is the cumulative distribution function of the standard normal distribution.
+\end{theorem}
+
+\paragraph{Rationale} In Reinforcement Learning, the agent interacts with an environment to maximize cumulative rewards.
+However, in real-world scenarios, rewards can be sparse and delayed, making it challenging for agents to learn effective policies, leading to 
+high variance in value estimates and slow convergence.
+To address this, we propose using the BSM model to shape rewards based on the agent's current state and time-to-go, providing more informative feedback and guiding the agent's learning process.
+
+In a RL task, we have to estimate the value function $V(s)$ or action-value function $Q(s,a)$, usually within a certain period of time.
+For instance, in Monte-Carlo methods, we estimate the expected return over an episode, while in Temporal-Difference (TD) learning, we estimate the value function based on one-step transitions.
+This is analogous to option pricing, where the option's value depends on the underlying asset price and time to maturity. These method often 
+suffer from slow convergence rate due to sparse rewards, e.g., in website bug mining, the agent only receives a reward when a bug is found, which may take a long time.
+
+We assume that the noise in the environment follows a log-normal distribution, similar to asset price movements in financial markets.
+By mapping the agent's state to a proxy asset price and time-to-go to time-to-maturity, we can compute a potential function using the BSM formula.
+Thus, though the environment may not provide frequent rewards, the agent can still receive continuous feedback through the potential-based shaping rewards derived from the BSM model, 
+which helps reduce variance and accelerates learning.
+
+\subsection{Merton Jump Model}
+
+In financial markets, asset prices often exhibit sudden and significant changes, known as jumps, which cannot be captured by the standard Black-Scholes model.
+To address this limitation, Robert C. Merton extended the Black-Scholes framework by incorporating jump processes into the asset price dynamics, leading to the Merton Jump-Diffusion Model.
+The Merton Jump-Diffusion Model assumes that the underlying asset price follows a stochastic process that combines both continuous diffusion and discrete jumps.
+The asset price dynamics under the Merton model can be described by the following stochastic differential equation (SDE):
+\begin{equation}
+dS_t = \mu S_t dt + \sigma S_t dW_t + J_t S_t dN_t
+\end{equation}
+where:
+\begin{itemize}
+    \item $S_t$ is the asset price at time $t$.
+    \item $\mu$ is the drift rate of the asset price.
+    \item $\sigma$ is the volatility of the continuous component.
+    \item $W_t$ is a standard Brownian motion.
+    \item $N_t$ is a Poisson process with intensity $\lambda$, representing the number of jumps up to time $t$.
+    \item $J_t$ is the jump size, typically modeled as a log-normal random variable.
+\end{itemize}
+
+\begin{remark}
+Such model can be also viewed as a Levy process, which generalizes Brownian motion by allowing for jumps.
+\end{remark}
+
+The Merton Jump-Diffusion Model leads to a modified option pricing formula that accounts for the possibility of jumps in the underlying asset price.
+\begin{theorem}[Merton Jump-Diffusion Option Pricing Formula]
+The price of a European call option $C(S_t, t)$ under the Merton Jump-Diffusion Model is given by:
+\begin{equation}
+C(S_t, t) = \sum_{n=0}^{\infty} \frac{e^{-\lambda (T-t)} (\lambda (T-t))^n}{n!} C_{BS}(S_t, t; \sigma_n)
+\end{equation}
+where:
+\begin{itemize}
+    \item $C_{BS}(S_t, t; \sigma_n)$ is the Black-Scholes price of the option with adjusted volatility $\sigma_n = \sqrt{\sigma^2 + \frac{n \delta^2}{T-t}}$, where $\delta$ is the standard deviation of the jump size.
+    \item $\lambda$ is the jump intensity.
+    \item $T$ is the time to maturity. 
+    \item $n$ is the number of jumps.
+\end{itemize}   
+\end{theorem}
+
+\paragraph{Rationale}
+While the Black-Scholes model assumes continuous price movements, real-world environments often exhibit sudden changes or
+jumps, leading to fat-tailed reward distributions.
+
+To better capture these dynamics, we propose using the Merton Jump-Diffusion Model for reward shaping in Reinforcement Learning.
+By incorporating jump processes, the Merton model provides a more accurate representation of environments with abrupt changes.
+
+\subsection{Adapted Decaying for Poisson Jump Intensity}
+
+We have assume that the jump intensity $\lambda$ is constant in the Merton model. However, 
+such assumption may lead to the overestimation of jump effects, resulting in not convergent 
+value estimates.
+To address this, we introduce an adapted decaying mechanism for the jump intensity $\lambda$.
+
+We use the random counting process $N(t)$ to model the number of jumps occurring up to time $t$.
+When a significant jump is detected in the reward signal, we increase the jump intensity $\lambda$ to reflect the higher likelihood of future jumps.
+As the $N(t) \sim P(\lambda)$, then $t\sim \Gamma(n, \lambda)$, where $n$ is the number of the 
+observed jumps. After time $T$, where the option is bound to expire, we may count there 
+are how many jumps with intensity $\lambda$. If there are too less jumps, then it means 
+that the jump intensity is overestimated, thus we decay the $\lambda$ accordingly.
+Specifically, we update $\lambda$ as follows:
+\begin{equation} 
+\lambda \leftarrow \lambda \cdot \exp(-\beta \cdot (N(T) - \lambda T))
+\end{equation}
+And we sample the observed time period $T$ from $\Gamma(1, \lambda)$.
+
+
+\section{Algorithm Framework}
+
+The overall algorithm framework for BSMRL using Merton Potential Shaping is outlined in Algorithm~\ref{alg:bsmrl_merton}.
+We introduce a method from \cite{NSPM2020}, whic allows us to decompose the reward into a predictable 
+component and a chaotic component, thus estimate the volatility rate of the chaotic component, which will be 
+used to compute the Merton potential shaping reward.
+
+\begin{algorithm}[H]
+\caption{BSMRL}
+\label{alg:bsmrl_merton}
+\begin{algorithmic}[1]
+\State \textbf{Hyperparameters:} Learning rate $\alpha$, Discount factor $\gamma$, Moving average rate $\eta$ (for statistics), Maturity $T$, Risk-free rate $r$, Jump mean $\mu_J$, Jump std $\delta_J$, Expansion terms $K$.
+\State \textbf{Initialize:} 
+\State $Q(s, a)$ arbitrarily.
+\State $\bar{R}(s, a) \leftarrow 0$ \Comment{Predictable Reward Component }
+\State $\Sigma^2_{chaos}(s, a) \leftarrow 0$ \Comment{Chaotic Variance (Doob Volatility) [cite: 139]}
+\State $\lambda_{jump}(s, a) \leftarrow \lambda_{init}$ \Comment{Estimated Jump Intensity for Levy Process}
+\State \textbf{Function} \textsc{BlackScholes}($S, K_{strike}, T, r, \sigma$):
+    \State $d_1 \leftarrow \frac{\ln(S/K_{strike}) + (r + 0.5\sigma^2)T}{\sigma\sqrt{T}}$
+    \State $d_2 \leftarrow d_1 - \sigma\sqrt{T}$
+    \State \textbf{return} $S \cdot \Phi(d_1) - K_{strike} e^{-rT} \cdot \Phi(d_2)$
+\State \textbf{End Function}
+
+\State \textbf{Function} \textsc{MertonPrice}($S_0, T, r, \sigma_{chaos}, \lambda, \mu_J, \delta_J$):
+    \State $Price \leftarrow 0$
+    \State $k \leftarrow e^{\mu_J + 0.5\delta_J^2} - 1$ \Comment{Expected jump size}
+    \State $\lambda' \leftarrow \lambda(1+k)$
+    \For{$n = 0$ to $K$}
+        \State $w_n \leftarrow \frac{e^{-\lambda' T} (\lambda' T)^n}{n!}$ \Comment{Poisson weight for n jumps}
+        \State $\sigma_n \leftarrow \sqrt{\sigma_{chaos}^2 + \frac{n \delta_J^2}{T}}$ \Comment{Effective volatility blending Doob noise \& Jumps}
+        \State $r_n \leftarrow r - \lambda k + \frac{n \ln(1+k)}{T}$
+        \State $Val_n \leftarrow \textsc{BlackScholes}(S_0, S_0, T, r_n, \sigma_n)$ \Comment{ATM Call Option as Enhanced Value}
+        \State $Price \leftarrow Price + w_n \cdot Val_n$
+    \EndFor
+    \State \textbf{return} $Price$
+\State \textbf{End Function}
+\Loop
+    \State Initialize state $s$
+    \While{$s$ is not terminal}
+        \State Choose action $a$ (e.g., $\epsilon$-greedy based on $Q$)
+        \State Take action $a$, observe reward $R_{obs}$ and next state $s'$
+        
+        \State $\delta_{pred} \leftarrow R_{obs} - \bar{R}(s, a)$ \Comment{Chaotic innovation [cite: 121]}
+        \State $\bar{R}(s, a) \leftarrow \bar{R}(s, a) + \eta \cdot \delta_{pred}$ \Comment{Update Predictable Component [cite: 170]}
+        \State $\Sigma^2_{chaos}(s, a) \leftarrow (1-\eta)\Sigma^2_{chaos}(s, a) + \eta \cdot (\delta_{pred})^2$ \Comment{Update Chaotic Variance }
+        
+        \If{$(\delta_{pred})^2 > 3 \cdot \Sigma^2_{chaos}(s, a)$}
+            \State $\lambda_{jump}(s, a) \leftarrow (1-\eta)\lambda_{jump}(s, a) + \eta \cdot 1$ \Comment{Detect sparse jump}
+        \Else
+            \State $\lambda_{jump}(s, a) \leftarrow (1-\eta)\lambda_{jump}(s, a)$
+        \EndIf
+
+        \State $a'_{best} \leftarrow \arg\max_{a'} Q(s', a')$
+        \State $S_{underlying} \leftarrow Q(s', a'_{best})$ \Comment{Underlying asset is the naive value}
+        \State $\sigma_{input} \leftarrow \sqrt{\Sigma^2_{chaos}(s', a'_{best})}$ \Comment{Use Doob Volatility as input}
+        \State $V_{enhanced}(s') \leftarrow \textsc{MertonPrice}(S_{underlying}, T, r, \sigma_{input}, \lambda_{jump}(s'), \mu_J, \delta_J)$
+        
+        \State $Y_{target} \leftarrow R_{obs} + \gamma \cdot V_{enhanced}(s')$ \Comment{Maximize Option-Adjusted Return}
+        
+        \State \Comment{\textbf{Q-Update}}
+        \State $Q(s, a) \leftarrow Q(s, a) + \alpha \left( Y_{target} - Q(s, a) \right)$
+        
+        \State $s \leftarrow s'$
+    \EndWhile
+\EndLoop
+\end{algorithmic}
+\end{algorithm}
+
+
+\newpage
+
+\section{Theoretical Analysis}
+
+\subsection{MDP Formulation for OptionRL} 
+
+\subsection{Convergence Analysis}
+
+\subsection{Variance Analysis}
+
+\section{Discussion and Future Work} 
+
+\section{Conclusion}
+
+\begin{thebibliography}{99}
+
+
+\bibitem{BS1973} The Pricing of Options and Corporate Liabilities, Black and Scholes, 1973
+\bibitem{Merton1974} On the Pricing of Corporate Debt: The Risk Structure of Interest Rates, Merton, 1974
+\bibitem{NSPM2020} Risk-Sensitive Reinforcement Learning: a Martingale Approach to Reward Uncertainty
+\end{thebibliography}
+
+
+\appendix 
+
+\section{Proofs}
+
+\section{Experiment Details}
+
+\end{document}
